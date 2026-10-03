@@ -1,98 +1,115 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useEffect, useState } from "react";
+import { Button, Text, View } from "react-native";
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
-
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
+function PracticeTracker({
+  solved,
+  onSolve,
+  onReset,
+}: {
+  solved: number;
+  onSolve: () => void;
+  onReset: () => void;
+}) {
   return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
+    <View>
+      <Text> Solved: {solved} </Text>
+
+      <Button title="Solve +1" onPress={onSolve} />
+
+      <Button title="Reset" onPress={onReset} />
+
+      {solved >= 5 && <Text> Great Job!</Text>}
+    </View>
   );
 }
 
-export default function HomeScreen() {
+function useStopwatch(isRunning: boolean) {
+  const [seconds, setSeconds] = useState(0);
+
+  useEffect(() => {
+    if (!isRunning) {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setSeconds((s) => s + 1);
+    }, 1000);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [isRunning]);
+
+  return seconds;
+}
+
+function Stopwatch({
+  seconds,
+  isRunning,
+}: {
+  seconds: number;
+  isRunning: boolean;
+}) {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+
+  const formattedTime =
+    String(minutes).padStart(2, "0") +
+    ":" +
+    String(remainingSeconds).padStart(2, "0");
+
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
+    <View>
+      <Text> {formattedTime} </Text>
 
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
-
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
+      {isRunning ? <Text> Running.... </Text> : <Text> Paused </Text>}
+    </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
-  },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
-  },
-  title: {
-    textAlign: 'center',
-  },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
-  },
-});
+function LabScreen() {
+  const [solved, setSolved] = useState(0);
+  const [isRunning, setIsRunning] = useState(false);
+
+  const seconds = useStopwatch(isRunning);
+
+  const handleSolve = () => {
+    setSolved((s) => s + 1);
+  };
+
+  const handleReset = () => {
+    setSolved(0);
+  };
+
+  const handleStart = () => {
+    setIsRunning(true);
+  };
+
+  const handleStop = () => {
+    setIsRunning(false);
+  };
+
+  return (
+    <View>
+      <PracticeTracker
+        solved={solved}
+        onSolve={handleSolve}
+        onReset={handleReset}
+      />
+
+      <Stopwatch seconds={seconds} isRunning={isRunning} />
+
+      <Button title="Start" onPress={handleStart} />
+
+      <Button title="Stop" onPress={handleStop} />
+    </View>
+  );
+}
+
+export default function App() {
+  return (
+    <View>
+      <LabScreen />
+    </View>
+  );
+}
